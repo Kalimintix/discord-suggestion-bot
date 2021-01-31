@@ -1,0 +1,18 @@
+{
+	"token": "TOKEN",
+	"ownerIDs": [
+		"owner_id"
+	],
+
+	"guild": "guild_id",
+
+	"suggestion_prefix": "--",
+	"submit": "channel_id",
+	"processing": "channel_id",
+	"processed": "channel_id",
+
+	"eAccept": "approved",
+	"eDeny": "denied",
+	"eUpvote": "emoji_id",
+	"eDownvote": "emoji_id"
+}
