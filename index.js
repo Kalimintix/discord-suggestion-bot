@@ -1,6 +1,9 @@
 const Discord = require('discord.js')
+const Intents = Discord.Intents
+const intents = new Intents([Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS])
 const client = new Discord.Client({
 	disableMentions: "everyone",
+	intents: intents
 })
 
 var config = require('./config.json')
@@ -9,7 +12,7 @@ client.on('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`)
 })
 
-client.on('message', msg => {
+client.on('messageCreate', msg => {
 	if (!msg.guild || !msg.guild.id == config.guild) {return}
 
 	if (config.submit == msg.channel.id && msg.content.replace(/–/g, "-").replace(/—/g, "-").startsWith(config.suggestion_prefix)) {
@@ -29,7 +32,7 @@ client.on('message', msg => {
 
 		}
 		processing.send({
-			embed: {
+			embeds: [{
 				author: {
 					name: `Suggestion from ${msg.member.displayName}`,
 					url: "https://discordapp.com/users/" + msg.author.id,
@@ -37,17 +40,17 @@ client.on('message', msg => {
 				},
 				image: image,
 				description: desc + click_through,
-			}
+			}]
 		}).then(async newmsg => {
 
 			msg.channel.send({
-				embed: {
+				embeds: [{
 					author: {
 						name: msg.member.displayName,
 						iconURL: msg.author.avatarURL(),
 					},
 					description: `Your suggestion has been submitted!\nYou can downvote your own suggestion to remove it.\n[Click here to go to submission](${newmsg.url})`,
-				}
+				}]
 			})
 
 			await newmsg.react(config.eUpvote)
@@ -58,6 +61,7 @@ client.on('message', msg => {
 
 // Handle Suggestion Reactions
 client.on('raw', async data => {
+	console.log(data)
 	if (!data.t || !data.d || !data.d.guild_id || data.t != "MESSAGE_REACTION_ADD") {return}
 	try {
 		if (data.d.channel_id != config.processing || !data.d.member || data.d.member.user.id == client.user.id) {return}
@@ -80,7 +84,7 @@ client.on('raw', async data => {
 
 			// Accept / Deny
 			// Permission 8 == administrator
-			if ((!config.ownerIDs.includes(member_id) && ((member ? member.permissions : 0) & 8) == 0) || (data.d.emoji.name != config.eAccept && data.d.emoji.name != config.eDeny)) {return}
+			if ((!config.ownerIDs.includes(member_id) && ((member ? member.permissions : 0n) & 8n) == 0n) || (data.d.emoji.name != config.eAccept && data.d.emoji.name != config.eDeny)) {return}
 
 			let processed = client.channels.cache.get(config.processed)
 			let embed = msg.embeds[0]
@@ -97,14 +101,14 @@ client.on('raw', async data => {
 				text: `${accepted ? "Accepted" : "Denied"} by ${data.d.member.nick || data.d.member.user.username} | Upvotes: ${upvotes ? upvotes.count - 1 : 0} | Downvotes: ${downvotes ? downvotes.count - 1 : 0}`
 			}
 
-			processed.send(embed).then(newmsg => {
+			processed.send({embeds: [embed]}).then(newmsg => {
 				submit.send({
 					content: `<@${embed.author.url.replace("https://discordapp.com/users/", "")}>`,
-					embed: {
+					embeds: [{
 						color: accepted ? 200 << 8 : 255 << 16,
 						title: accepted ? "Your suggestion was accepted!" : "Your suggestion was denied.",
 						description: `\n**[Click here to see it](${newmsg.url})**`
-					}
+					}]
 				})
 
 				msg.delete()
