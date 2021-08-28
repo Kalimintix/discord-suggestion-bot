@@ -8,6 +8,10 @@ const client = new Discord.Client({
 
 var config = require('./config.json')
 
+const Trello = require("node-trello")
+var trello = new Trello(config.trello_apikey, config.trello_token)
+
+
 client.on('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`)
 })
@@ -59,9 +63,14 @@ client.on('messageCreate', msg => {
 	}
 })
 
+function PostCard(name, suggestion) {
+	return new Promise((resolve, reject) => {
+		trello.post("/1/cards", {name: name, idList: config.trello_category, idLabels: [config.trello_label], desc: suggestion}, resolve, reject)
+	})
+}
+
 // Handle Suggestion Reactions
 client.on('raw', async data => {
-	console.log(data)
 	if (!data.t || !data.d || !data.d.guild_id || data.t != "MESSAGE_REACTION_ADD") {return}
 	try {
 		if (data.d.channel_id != config.processing || !data.d.member || data.d.member.user.id == client.user.id) {return}
@@ -71,7 +80,7 @@ client.on('raw', async data => {
 			member = await client.guilds.cache.get(data.d.guild_id).members.fetch(member_id)
 		} catch (error) { console.log(error) }
 
-		client.channels.cache.get(data.d.channel_id).messages.fetch(data.d.message_id).then( msg => {
+		client.channels.cache.get(data.d.channel_id).messages.fetch(data.d.message_id).then(async msg => {
 
 			if (!msg.embeds || !msg.embeds[0]) {return}
 
@@ -84,12 +93,22 @@ client.on('raw', async data => {
 
 			// Accept / Deny
 			// Permission 8 == administrator
-			if ((!config.ownerIDs.includes(member_id) && ((member ? member.permissions : 0n) & 8n) == 0n) || (data.d.emoji.name != config.eAccept && data.d.emoji.name != config.eDeny)) {return}
+			if ((!config.ownerIDs.includes(member_id) && ((member ? member.permissions : 0n) & 8n) == 0n) || (data.d.emoji.name != config.eAccept && data.d.emoji.name != config.eDeny && data.d.emoji.name != config.eAcceptTrello)) {return}
 
 			let processed = client.channels.cache.get(config.processed)
 			let embed = msg.embeds[0]
 			let submit = client.channels.cache.get(config.submit)
-			let accepted = data.d.emoji.name == config.eAccept
+			let accepted = data.d.emoji.name == config.eAccept || data.d.emoji.name == config.eAcceptTrello
+
+			var card
+			if (config.enableTrello && data.d.emoji.name == config.eAcceptTrello) {
+				card = await PostCard(embed.author.name, embed.description)
+				if (card === null) {
+					embed.description += `\n[Sent to Trello](${config.trello_url})`
+				} else {
+					console.log(card)
+				}
+			}
 
 			embed.color = accepted ? 200 << 8 : 255 << 16
 			embed.author.name = accepted ? "Accepted " + embed.author.name : "Denied " + embed.author.name

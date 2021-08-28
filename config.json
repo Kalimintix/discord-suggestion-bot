@@ -11,8 +11,17 @@
 	"processing": "channel_id",
 	"processed": "channel_id",
 
-	"eAccept": "approved",
-	"eDeny": "denied",
+	"eAccept": "emoji_name",
+	"eDeny": "emoji_name",
+
 	"eUpvote": "emoji_id",
-	"eDownvote": "emoji_id"
+	"eDownvote": "emoji_id",
+
+	"enableTrello": false,
+	"eAcceptTrello": "emoji_name",
+	"trello_token": "TOKEN",
+	"trello_apikey": "KEY",
+	"trello_category": "category_id",
+	"trello_label": "label_id",
+	"trello_url": "link"
 }
